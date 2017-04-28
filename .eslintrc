@@ -1,0 +1,16 @@
+{
+  "extends": "airbnb-base",
+  "rules": {
+    "max-len": ["error", 120, 2, {
+      "ignoreUrls": true,
+      "ignoreComments": false
+    }],
+    "semi": ["error", "never"],
+    "no-param-reassign": ["error", {
+      "props": false
+    }]
+  },
+  "env": {
+    "browser": true
+  }
+}

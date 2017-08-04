@@ -17,12 +17,14 @@ const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'develop
 
 gulp.task('clean', () => del(['build']))
 
-gulp.task('html', () => gulp.src(['src/templates/**/*.pug', '!src/templates/layout/*.pug'])
+gulp.task('html', () => gulp.src(['src/markup/templates/**/*.pug'])
+  .pipe(plugins.newer('build/'))
   .pipe(plugins.pug({ pretty: true }))
   .pipe(gulp.dest('build/'))
   .pipe(sync.stream()))
 
 gulp.task('fonts', () => gulp.src('src/fonts/*')
+  .pipe(plugins.newer('build/fonts/'))
   .pipe(gulp.dest('build/fonts/')))
 
 gulp.task('css', () => {
@@ -31,45 +33,47 @@ gulp.task('css', () => {
     flexboxFixes(),
     mqpacker(),
   ]
-  return gulp.src('src/styles/**/*.styl')
-      .pipe(plugins.ignore('**/_*.styl'))
-      .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
-      .pipe(plugins.stylus({
-        use: [poststylus(processors)],
-        'include css': true,
-      }))
-      .on('error', (error) => { console.error(error) })
-      .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
-      .pipe(gulp.dest('build/css/'))
-      .pipe(sync.stream())
-      .pipe(plugins.rename({ basename: 'main.min' }))
-      .pipe(plugins.cssnano())
-      .pipe(gulp.dest('build/css/'))
+  return gulp.src('src/styles/main.styl')
+    .pipe(plugins.newer('build/css/'))
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
+    .pipe(plugins.stylus({
+      use: [poststylus(processors)],
+      'include css': true,
+    }))
+    .on('error', (error) => { console.error(error) })
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
+    .pipe(gulp.dest('build/css/'))
+    .pipe(sync.stream())
+    .pipe(plugins.rename({ basename: 'main.min' }))
+    .pipe(plugins.cssnano())
+    .pipe(gulp.dest('build/css/'))
 })
 
 gulp.task('img', () => gulp.src('src/img/**/*')
+  .pipe(plugins.newer('build/img/'))
   .pipe(plugins.imagemin([
     plugins.imagemin.gifsicle({ interlaced: true }),
     plugins.imagemin.jpegtran({ progressive: true }),
     plugins.imagemin.optipng({ optimizationLevel: 3 }),
     plugins.imagemin.svgo({ plugins: [
-          { removeViewBox: false },
-          { cleanupIDs: true },
-          { removeTitle: true },
+      { removeViewBox: false },
+      { cleanupIDs: true },
+      { removeTitle: true },
     ] }),
   ]))
-    .pipe(gulp.dest('build/img/'))
-    .pipe(sync.stream()))
+  .pipe(gulp.dest('build/img/'))
+  .pipe(sync.stream()))
 
 gulp.task('js', () => gulp.src('src/js/main.js')
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
-    .pipe(webpackStream(webpackConfig, webpack))
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
-    .pipe(gulp.dest('build/js'))
-    .pipe(sync.stream())
-    .pipe(plugins.rename({ basename: 'bundle.min' }))
-    .pipe(plugins.babel({ presets: ['babili'] }))
-    .pipe(gulp.dest('build/js')))
+  .pipe(plugins.newer('build/js'))
+  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
+  .pipe(webpackStream(webpackConfig, webpack))
+  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
+  .pipe(gulp.dest('build/js'))
+  .pipe(sync.stream())
+  .pipe(plugins.rename({ basename: 'bundle.min' }))
+  .pipe(plugins.babel({ presets: ['babili'] }))
+  .pipe(gulp.dest('build/js')))
 
 gulp.task('serve', () => {
   sync.init({

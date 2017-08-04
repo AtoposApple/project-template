@@ -5,17 +5,15 @@ import sequence from 'run-sequence'
 import webpackStream from 'webpack-stream-fixed'
 import webpack from 'webpack'
 import mqpacker from 'css-mqpacker'
-import lost from 'lost'
 import flexboxFixes from 'postcss-flexbugs-fixes'
-import use from 'postcss-use'
 import del from 'del'
 import autoprefixer from 'autoprefixer'
-import rupture from 'rupture'
 import poststylus from 'poststylus'
 import webpackConfig from './webpack.config'
 
 const plugins = gulpLoadPlugins()
 const sync = browserSync.create()
+const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 gulp.task('clean', () => del(['build']))
 
@@ -32,24 +30,22 @@ gulp.task('css', () => {
     autoprefixer({ browsers: ['last 2 versions'] }),
     flexboxFixes(),
     mqpacker(),
-    lost(),
-    use({ modules: ['lost'] }),
   ]
   return gulp.src('src/styles/**/*.styl')
       .pipe(plugins.ignore('**/_*.styl'))
+      .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
       .pipe(plugins.stylus({
-        use: [rupture(), poststylus(processors)],
+        use: [poststylus(processors)],
         'include css': true,
       }))
       .on('error', (error) => { console.error(error) })
+      .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
       .pipe(gulp.dest('build/css/'))
       .pipe(sync.stream())
+      .pipe(plugins.rename({ basename: 'main.min' }))
+      .pipe(plugins.cssnano())
+      .pipe(gulp.dest('build/css/'))
 })
-
-gulp.task('cssmin', () => gulp.src('build/css/*.css')
-  .pipe(plugins.rename({ basename: 'main.min' }))
-  .pipe(plugins.cssnano())
-  .pipe(gulp.dest('build/css/')))
 
 gulp.task('img', () => gulp.src('src/img/**/*')
   .pipe(plugins.imagemin([
@@ -66,12 +62,14 @@ gulp.task('img', () => gulp.src('src/img/**/*')
     .pipe(sync.stream()))
 
 gulp.task('js', () => gulp.src('src/js/main.js')
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
     .pipe(webpackStream(webpackConfig, webpack))
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
     .pipe(gulp.dest('build/js'))
+    .pipe(sync.stream())
     .pipe(plugins.rename({ basename: 'bundle.min' }))
     .pipe(plugins.babel({ presets: ['babili'] }))
-    .pipe(gulp.dest('build/js'))
-    .pipe(sync.stream()))
+    .pipe(gulp.dest('build/js')))
 
 gulp.task('serve', () => {
   sync.init({
@@ -88,9 +86,9 @@ gulp.task('serve', () => {
 })
 
 gulp.task('default', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['cssmin'], 'serve')
+  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], 'serve')
 })
 
 gulp.task('prod', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['cssmin'])
+  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'])
 })

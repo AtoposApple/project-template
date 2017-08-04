@@ -1,4 +1,4 @@
-const path = require('path')
+import path from 'path'
 
 const config = {
   entry: './src/js/main.js',
@@ -19,4 +19,4 @@ const config = {
   },
 }
 
-module.exports = config
+export { config as default }

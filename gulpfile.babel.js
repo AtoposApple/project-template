@@ -1,24 +1,28 @@
-const gulp = require('gulp')
-const plugins = require('gulp-load-plugins')()
-const sync = require('browser-sync').create()
-const sequence = require('run-sequence')
-const webpackStream = require('webpack-stream')
-const webpack2 = require('webpack')
-const mqpacker = require('css-mqpacker')
-const lost = require('lost')
-const flexboxFixes = require('postcss-flexbugs-fixes')
-const use = require('postcss-use')
-const del = require('del')
-const autoprefixer = require('autoprefixer')
-const rupture = require('rupture')
-const poststylus = require('poststylus')
+import gulp from 'gulp'
+import gulpLoadPlugins from 'gulp-load-plugins'
+import browserSync from 'browser-sync'
+import sequence from 'run-sequence'
+import webpackStream from 'webpack-stream-fixed'
+import webpack from 'webpack'
+import mqpacker from 'css-mqpacker'
+import lost from 'lost'
+import flexboxFixes from 'postcss-flexbugs-fixes'
+import use from 'postcss-use'
+import del from 'del'
+import autoprefixer from 'autoprefixer'
+import rupture from 'rupture'
+import poststylus from 'poststylus'
+import webpackConfig from './webpack.config'
+
+const plugins = gulpLoadPlugins()
+const sync = browserSync.create()
 
 gulp.task('clean', () => del(['build']))
 
 gulp.task('html', () => gulp.src(['src/templates/**/*.pug', '!src/templates/layout/*.pug'])
   .pipe(plugins.pug({ pretty: true }))
-  .pipe(gulp.dest('build/')
-  .on('end', sync.reload)))
+  .pipe(gulp.dest('build/'))
+  .pipe(sync.stream()))
 
 gulp.task('fonts', () => gulp.src('src/fonts/*')
   .pipe(gulp.dest('build/fonts/')))
@@ -47,7 +51,6 @@ gulp.task('cssmin', () => gulp.src('build/css/*.css')
   .pipe(plugins.cssnano())
   .pipe(gulp.dest('build/css/')))
 
-
 gulp.task('img', () => gulp.src('src/img/**/*')
   .pipe(plugins.imagemin([
     plugins.imagemin.gifsicle({ interlaced: true }),
@@ -63,13 +66,12 @@ gulp.task('img', () => gulp.src('src/img/**/*')
     .pipe(sync.stream()))
 
 gulp.task('js', () => gulp.src('src/js/main.js')
-    .pipe(webpackStream(require('./webpack.config.js'), webpack2))
-    .pipe(gulp.dest('build/js')))
-
-gulp.task('jsmin', () => gulp.src('build/js/*.js')
-  .pipe(plugins.rename({ basename: 'bundle.min' }))
-  .pipe(plugins.babel({ presets: ['babili'] }))
-  .pipe(gulp.dest('build/js')))
+    .pipe(webpackStream(webpackConfig, webpack))
+    .pipe(gulp.dest('build/js'))
+    .pipe(plugins.rename({ basename: 'bundle.min' }))
+    .pipe(plugins.babel({ presets: ['babili'] }))
+    .pipe(gulp.dest('build/js'))
+    .pipe(sync.stream()))
 
 gulp.task('serve', () => {
   sync.init({
@@ -86,9 +88,9 @@ gulp.task('serve', () => {
 })
 
 gulp.task('default', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['jsmin', 'cssmin'], 'serve')
+  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['cssmin'], 'serve')
 })
 
 gulp.task('prod', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['jsmin', 'cssmin'])
+  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], ['cssmin'])
 })

@@ -8,7 +8,6 @@ import flexboxFixes from 'postcss-flexbugs-fixes'
 import del from 'del'
 import autoprefixer from 'autoprefixer'
 import poststylus from 'poststylus'
-import pump from 'pump'
 import browserSync from 'browser-sync'
 import fs from 'fs'
 import webpackConfig from './webpack.config'
@@ -19,18 +18,24 @@ const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'develop
 
 gulp.task('clean', () => del(['build']))
 
-gulp.task('html', () => pump([
-  gulp.src('src/markup/templates/**/*.pug'),
-  plugins.pug({ pretty: true }),
-  gulp.dest('build/'),
-  sync.stream(),
-]))
+gulp.task('html', () => gulp.src('src/**/*.pug')
+  .pipe(plugins.plumber({
+    errorHandler: plugins.notify.onError(err => ({
+      title: 'HTML task: error',
+      message: err.message,
+    })),
+  }))
+  .pipe(plugins.cached('html'))
+  .pipe(plugins.if(global.isWatching, plugins.pugInheritance({ basedir: 'src', skip: ['fonts', 'img', 'js', 'styles', 'svg'] })))
+  .pipe(plugins.filter(file => /templates/.test(file.path)))
+  .pipe(plugins.pug({ pretty: true }))
+  .pipe(plugins.rename({ dirname: '.' }))
+  .pipe(gulp.dest('build')))
 
-gulp.task('fonts', () => pump([
-  gulp.src('src/fonts/*'),
-  plugins.newer('build/fonts/'),
-  gulp.dest('build/fonts/'),
-]))
+
+gulp.task('fonts', () => gulp.src('src/fonts/**/*')
+  .pipe(plugins.newer('build/fonts/'))
+  .pipe(gulp.dest('build/fonts/')))
 
 gulp.task('css', () => {
   const processors = [
@@ -38,26 +43,31 @@ gulp.task('css', () => {
     flexboxFixes(),
     mqpacker(),
   ]
-  return pump([
-    gulp.src('src/styles/main.styl'),
-    plugins.if(isDevelopment, plugins.sourcemaps.init()),
-    plugins.stylus({
+  return gulp.src('src/styles/main.styl')
+    .pipe(plugins.plumber({
+      errorHandler: plugins.notify.onError(err => ({
+        title: 'CSS task: error',
+        message: err.message,
+      })),
+    }))
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
+    .pipe(plugins.stylus({
       use: [poststylus(processors)],
       'include css': true,
-    }),
-    plugins.if(isDevelopment, plugins.sourcemaps.write()),
-    gulp.dest('build/css/'),
-    sync.stream(),
-    plugins.rename({ basename: 'main.min' }),
-    plugins.cssnano(),
-    gulp.dest('build/css/'),
-  ])
+    }))
+    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
+    .pipe(gulp.dest('build/css/'))
+    .pipe(sync.stream())
 })
 
-gulp.task('img', () => pump([
-  gulp.src('src/img/**/*'),
-  plugins.newer('build/img/'),
-  plugins.imagemin([
+gulp.task('css:min', () => gulp.src('build/css/main.css')
+  .pipe(plugins.rename({ suffix: '.min' }))
+  .pipe(plugins.cssnano())
+  .pipe(gulp.dest('build/css/')))
+
+gulp.task('img', () => gulp.src('src/img/**/*')
+  .pipe(plugins.newer('build/img/'))
+  .pipe(plugins.imagemin([
     plugins.imagemin.gifsicle({ interlaced: true }),
     plugins.imagemin.jpegtran({ progressive: true }),
     plugins.imagemin.optipng({ optimizationLevel: 3 }),
@@ -66,22 +76,26 @@ gulp.task('img', () => pump([
       { cleanupIDs: true },
       { removeTitle: true },
     ] }),
-  ]),
-  gulp.dest('build/img/'),
-  sync.stream(),
-]))
+  ]))
+  .pipe(gulp.dest('build/img/')))
 
-gulp.task('js', () => pump([
-  gulp.src('src/js/main.js'),
-  plugins.if(isDevelopment, plugins.sourcemaps.init()),
-  webpackStream(webpackConfig, webpack),
-  plugins.if(isDevelopment, plugins.sourcemaps.write()),
-  gulp.dest('build/js'),
-  sync.stream(),
-  plugins.rename({ basename: 'bundle.min' }),
-  plugins.babel({ presets: ['babili'] }),
-  gulp.dest('build/js'),
-]))
+gulp.task('js', () => gulp.src('src/js/main.js')
+  .pipe(plugins.plumber({
+    errorHandler: plugins.notify.onError(err => ({
+      title: 'JS task: error',
+      message: err.message,
+    })),
+  }))
+  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
+  .pipe(webpackStream(webpackConfig, webpack))
+  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
+  .pipe(gulp.dest('build/js')))
+
+gulp.task('js:min', () => gulp.src('build/js/bundle.js')
+  .pipe(plugins.rename({ suffix: '.min' }))
+  .pipe(plugins.babel({ presets: ['babili'] }))
+  .pipe(gulp.dest('build/js')))
+
 
 gulp.task('serve', () => {
   sync.init({
@@ -90,13 +104,19 @@ gulp.task('serve', () => {
     },
     directory: true,
     open: true,
-    notify: false,
     port: 3000,
-    ghostMode: false,
     reloadOnRestart: true,
   })
+})
 
-  plugins.watch(['{components,styles}/**/*.styl', 'components', 'styles'], { cwd: 'src' }, (e) => {
+gulp.task('watch', () => {
+  global.isWatching = true
+
+  plugins.watch(['{components,markup}/**/*.pug'], { cwd: 'src' }, (e) => {
+    console.log(e.path, e.event, e.extname)
+    sequence('html', sync.reload)
+  })
+  plugins.watch(['{components,styles}/**/*.styl'], { cwd: 'src' }, (e) => {
     const fullPath = e.path
 
     function getIndex(str) {
@@ -130,7 +150,7 @@ gulp.task('serve', () => {
       fs.writeFileSync('src/styles/main.styl', contentArr.filter(item => item !== assemblePath(type)).join('\n'))
     }
 
-    if (e.event === 'add') {
+    if (e.event === 'add' && e.extname === '.styl') {
       if (~getIndex('components')) {
         fs.appendFileSync('src/styles/main.styl', `\n${assemblePath('components')}`)
       }
@@ -142,7 +162,7 @@ gulp.task('serve', () => {
       return
     }
 
-    if (e.event === 'unlink') {
+    if (e.event === 'unlink' && e.extname === '.styl') {
       if (~getIndex('components')) {
         deleteStr('components')
       }
@@ -158,9 +178,9 @@ gulp.task('serve', () => {
 })
 
 gulp.task('default', () => {
-  sequence(['html', 'fonts', 'css', 'js', 'img'], 'serve')
+  sequence(['html', 'fonts', 'css', 'js', 'img'], 'serve', 'watch')
 })
 
 gulp.task('prod', () => {
-  sequence(['html', 'fonts', 'css', 'js', 'img'])
+  sequence(['html', 'fonts', 'css', 'js', 'img'], ['css:min', 'js:min'])
 })

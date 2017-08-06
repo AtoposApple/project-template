@@ -1,6 +1,5 @@
 import gulp from 'gulp'
 import gulpLoadPlugins from 'gulp-load-plugins'
-import browserSync from 'browser-sync'
 import sequence from 'run-sequence'
 import webpackStream from 'webpack-stream-fixed'
 import webpack from 'webpack'
@@ -9,23 +8,29 @@ import flexboxFixes from 'postcss-flexbugs-fixes'
 import del from 'del'
 import autoprefixer from 'autoprefixer'
 import poststylus from 'poststylus'
+import pump from 'pump'
+import browserSync from 'browser-sync'
+import fs from 'fs'
 import webpackConfig from './webpack.config'
 
-const plugins = gulpLoadPlugins()
 const sync = browserSync.create()
+const plugins = gulpLoadPlugins()
 const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 gulp.task('clean', () => del(['build']))
 
-gulp.task('html', () => gulp.src(['src/markup/templates/**/*.pug'])
-  .pipe(plugins.newer('build/'))
-  .pipe(plugins.pug({ pretty: true }))
-  .pipe(gulp.dest('build/'))
-  .pipe(sync.stream()))
+gulp.task('html', () => pump([
+  gulp.src('src/markup/templates/**/*.pug'),
+  plugins.pug({ pretty: true }),
+  gulp.dest('build/'),
+  sync.stream(),
+]))
 
-gulp.task('fonts', () => gulp.src('src/fonts/*')
-  .pipe(plugins.newer('build/fonts/'))
-  .pipe(gulp.dest('build/fonts/')))
+gulp.task('fonts', () => pump([
+  gulp.src('src/fonts/*'),
+  plugins.newer('build/fonts/'),
+  gulp.dest('build/fonts/'),
+]))
 
 gulp.task('css', () => {
   const processors = [
@@ -33,25 +38,26 @@ gulp.task('css', () => {
     flexboxFixes(),
     mqpacker(),
   ]
-  return gulp.src('src/styles/main.styl')
-    .pipe(plugins.newer('build/css/'))
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
-    .pipe(plugins.stylus({
+  return pump([
+    gulp.src('src/styles/main.styl'),
+    plugins.if(isDevelopment, plugins.sourcemaps.init()),
+    plugins.stylus({
       use: [poststylus(processors)],
       'include css': true,
-    }))
-    .on('error', (error) => { console.error(error) })
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
-    .pipe(gulp.dest('build/css/'))
-    .pipe(sync.stream())
-    .pipe(plugins.rename({ basename: 'main.min' }))
-    .pipe(plugins.cssnano())
-    .pipe(gulp.dest('build/css/'))
+    }),
+    plugins.if(isDevelopment, plugins.sourcemaps.write()),
+    gulp.dest('build/css/'),
+    sync.stream(),
+    plugins.rename({ basename: 'main.min' }),
+    plugins.cssnano(),
+    gulp.dest('build/css/'),
+  ])
 })
 
-gulp.task('img', () => gulp.src('src/img/**/*')
-  .pipe(plugins.newer('build/img/'))
-  .pipe(plugins.imagemin([
+gulp.task('img', () => pump([
+  gulp.src('src/img/**/*'),
+  plugins.newer('build/img/'),
+  plugins.imagemin([
     plugins.imagemin.gifsicle({ interlaced: true }),
     plugins.imagemin.jpegtran({ progressive: true }),
     plugins.imagemin.optipng({ optimizationLevel: 3 }),
@@ -60,20 +66,22 @@ gulp.task('img', () => gulp.src('src/img/**/*')
       { cleanupIDs: true },
       { removeTitle: true },
     ] }),
-  ]))
-  .pipe(gulp.dest('build/img/'))
-  .pipe(sync.stream()))
+  ]),
+  gulp.dest('build/img/'),
+  sync.stream(),
+]))
 
-gulp.task('js', () => gulp.src('src/js/main.js')
-  .pipe(plugins.newer('build/js'))
-  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
-  .pipe(webpackStream(webpackConfig, webpack))
-  .pipe(plugins.if(isDevelopment, plugins.sourcemaps.write()))
-  .pipe(gulp.dest('build/js'))
-  .pipe(sync.stream())
-  .pipe(plugins.rename({ basename: 'bundle.min' }))
-  .pipe(plugins.babel({ presets: ['babili'] }))
-  .pipe(gulp.dest('build/js')))
+gulp.task('js', () => pump([
+  gulp.src('src/js/main.js'),
+  plugins.if(isDevelopment, plugins.sourcemaps.init()),
+  webpackStream(webpackConfig, webpack),
+  plugins.if(isDevelopment, plugins.sourcemaps.write()),
+  gulp.dest('build/js'),
+  sync.stream(),
+  plugins.rename({ basename: 'bundle.min' }),
+  plugins.babel({ presets: ['babili'] }),
+  gulp.dest('build/js'),
+]))
 
 gulp.task('serve', () => {
   sync.init({
@@ -82,17 +90,77 @@ gulp.task('serve', () => {
     },
     directory: true,
     open: true,
+    notify: false,
+    port: 3000,
+    ghostMode: false,
+    reloadOnRestart: true,
   })
-  gulp.watch('src/**/*.styl', ['css'])
-  gulp.watch('src/templates/**/*.pug', ['html'])
-  gulp.watch('src/**/*.js', ['js'])
-  gulp.watch('src/img/*', ['img'])
+
+  plugins.watch(['{components,styles}/**/*.styl', 'components', 'styles'], { cwd: 'src' }, (e) => {
+    const fullPath = e.path
+
+    function getIndex(str) {
+      const index = fullPath.indexOf(str)
+      return index
+    }
+
+    function assemblePath(str) {
+      let cutPath
+      let assembledPath
+
+      switch (str) {
+        case 'components':
+          cutPath = fullPath.slice(getIndex('components'))
+          assembledPath = `@require "../${cutPath}"`
+          break
+        case 'styles':
+          cutPath = fullPath.slice(getIndex('styles') + 'styles'.length + 1)
+          assembledPath = `@require "${cutPath}"`
+          break
+        default:
+          return false
+      }
+
+      return assembledPath
+    }
+
+    function deleteStr(type) {
+      const data = fs.readFileSync('src/styles/main.styl', 'utf-8')
+      const contentArr = data.split('\n')
+      fs.writeFileSync('src/styles/main.styl', contentArr.filter(item => item !== assemblePath(type)).join('\n'))
+    }
+
+    if (e.event === 'add') {
+      if (~getIndex('components')) {
+        fs.appendFileSync('src/styles/main.styl', `\n${assemblePath('components')}`)
+      }
+
+      if (~getIndex('styles')) {
+        fs.appendFileSync('src/styles/main.styl', `\n${assemblePath('styles')}`)
+      }
+
+      return
+    }
+
+    if (e.event === 'unlink') {
+      if (~getIndex('components')) {
+        deleteStr('components')
+      }
+      if (~getIndex('styles')) {
+        deleteStr('styles')
+      }
+
+      return
+    }
+
+    sequence('css')
+  })
 })
 
 gulp.task('default', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'], 'serve')
+  sequence(['html', 'fonts', 'css', 'js', 'img'], 'serve')
 })
 
 gulp.task('prod', () => {
-  sequence('clean', ['html', 'fonts', 'css', 'js', 'img'])
+  sequence(['html', 'fonts', 'css', 'js', 'img'])
 })

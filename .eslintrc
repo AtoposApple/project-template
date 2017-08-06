@@ -8,7 +8,8 @@
     "semi": ["error", "never"],
     "no-param-reassign": ["error", {
       "props": false
-    }]
+    }],
+    "no-bitwise": ["error", { "allow": ["~"] }]
   },
   "env": {
     "browser": true

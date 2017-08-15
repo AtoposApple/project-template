@@ -36,11 +36,15 @@
     "gulp-rename": "^1.2.2",
     "gulp-sourcemaps": "^2.6.0",
     "gulp-stylus": "^2.6.0",
+    "gulp-util": "^3.0.8",
     "gulp-watch": "^4.3.11",
+    "node-notifier": "^5.1.2",
     "postcss-flexbugs-fixes": "^2.1.1",
     "poststylus": "^0.2.3",
+    "require-dir": "^0.3.2",
     "run-sequence": "^1.2.2",
     "webpack": "^2.4.1",
+    "webpack-stream": "^4.0.0",
     "webpack-stream-fixed": "^3.2.2"
   },
   "dependencies": {

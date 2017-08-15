@@ -9,7 +9,8 @@
     "no-param-reassign": ["error", {
       "props": false
     }],
-    "no-bitwise": ["error", { "allow": ["~"] }]
+    "no-bitwise": ["error", { "allow": ["~"] }],
+    "import/no-extraneous-dependencies": ["error", {"devDependencies": true, "optionalDependencies": false, "peerDependencies": false}]
   },
   "env": {
     "browser": true

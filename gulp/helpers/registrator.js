@@ -1,3 +1,5 @@
+/* Register new files on add in entry file */
+
 import fs from 'fs'
 
 export default function registrator(event) {

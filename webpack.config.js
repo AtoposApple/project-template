@@ -1,4 +1,7 @@
 import path from 'path'
+import webpack from 'webpack'
+
+const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 const config = {
   entry: './src/js/main.js',
@@ -6,7 +9,9 @@ const config = {
     path: path.resolve(__dirname, './build/js'),
     filename: 'bundle.js',
   },
-  devtool: 'inline-source-map',
+  devtool: isDevelopment ? 'inline-source-map' : null,
+  watch: isDevelopment,
+  cache: true,
   module: {
     rules: [
       {
@@ -18,6 +23,9 @@ const config = {
       },
     ],
   },
+  plugins: [
+    new webpack.NoEmitOnErrorsPlugin(),
+  ],
 }
 
 export { config as default }

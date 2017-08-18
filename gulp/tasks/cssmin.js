@@ -7,8 +7,8 @@ gulp.task('css:min', () => gulp.src('build/css/main.css')
   .pipe(plugins.plumber({
     errorHandler: plugins.notify.onError(err => ({
       title: 'CSS:min task error',
-      message: err.message,
-    })),
+      message: err.message
+    }))
   }))
   .pipe(plugins.rename({ suffix: '.min' }))
   .pipe(plugins.cssnano())

@@ -2,7 +2,7 @@
 
 import fs from 'fs'
 
-export default function registrator(event) {
+export default function registrator (event) {
   const e = event
   const fullPath = e.path
   const extname = e.extname
@@ -14,7 +14,7 @@ export default function registrator(event) {
     return false
   }
 
-  function findFolder(folders) {
+  function findFolder (folders) {
     const filtered = folders.filter((item) => {
       const regExp = new RegExp(item)
       return regExp.test(fullPath)
@@ -26,21 +26,21 @@ export default function registrator(event) {
     '.js': {
       folders: ['components'],
       main: 'src/js/main.js',
-      method: 'import ',
+      method: 'import '
     },
     '.styl': {
       folders: ['components', 'styles'],
       main: 'src/styles/main.styl',
-      method: '@require ',
-    },
+      method: '@require '
+    }
   }
 
-  function getIndex(where, what) {
+  function getIndex (where, what) {
     const index = where.indexOf(what)
     return index
   }
 
-  function assemblePath(string) {
+  function assemblePath (string) {
     let cutPath
     let assembledPath
     let jsExtname
@@ -63,7 +63,7 @@ export default function registrator(event) {
     return assembledPath
   }
 
-  function addStr(obj) {
+  function addStr (obj) {
     const file = obj.main
     const folder = findFolder(obj.folders)
     const method = obj.method
@@ -71,7 +71,7 @@ export default function registrator(event) {
     fs.appendFileSync(file, `\n${method}${assemblePath(folder)}`)
   }
 
-  function deleteStr(obj) {
+  function deleteStr (obj) {
     const file = obj.main
     const folder = findFolder(obj.folders)
     const method = obj.method

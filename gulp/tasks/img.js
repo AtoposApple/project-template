@@ -7,8 +7,8 @@ gulp.task('img', () => gulp.src('src/{img,svg}/**/*')
   .pipe(plugins.plumber({
     errorHandler: plugins.notify.onError(err => ({
       title: 'Img task error',
-      message: err.message,
-    })),
+      message: err.message
+    }))
   }))
   .pipe(plugins.newer('build/img/'))
   .pipe(plugins.imagemin([
@@ -18,7 +18,7 @@ gulp.task('img', () => gulp.src('src/{img,svg}/**/*')
     plugins.imagemin.svgo({ plugins: [
       { removeViewBox: false },
       { cleanupIDs: true },
-      { removeTitle: true },
-    ] }),
+      { removeTitle: true }
+    ] })
   ]))
   .pipe(gulp.dest('build/img/')))

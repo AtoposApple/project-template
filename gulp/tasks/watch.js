@@ -7,7 +7,6 @@ import registrator from '../helpers/registrator'
 const plugins = gulpLoadPlugins()
 const sync = browserSync.create()
 
-
 gulp.task('watch', () => {
   global.isWatching = true
   plugins.watch(['{components,markup}/**/*.pug'], { cwd: 'src' }, () => sequence('html', sync.reload))
@@ -16,7 +15,7 @@ gulp.task('watch', () => {
     sequence('css')
   })
   plugins.watch(['{components,js}/**/*.js'], { cwd: 'src' }, (e) => {
-    console.log(e.event);
+    console.log(e.event)
     registrator(e)
   })
   plugins.watch(['fonts/**/*'], { cwd: 'src' }, () => sequence('fonts', sync.reload))

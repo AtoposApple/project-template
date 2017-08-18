@@ -10,24 +10,23 @@ const plugins = gulpLoadPlugins()
 const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 const sync = browserSync.create()
 
-
 gulp.task('css', () => {
   const processors = [
     autoprefixer({ browsers: ['last 2 versions'] }),
     flexboxFixes(),
-    mqpacker(),
+    mqpacker()
   ]
   return gulp.src('src/styles/main.styl')
     .pipe(plugins.plumber({
       errorHandler: plugins.notify.onError(err => ({
         title: 'CSS task error',
-        message: err.message,
-      })),
+        message: err.message
+      }))
     }))
     .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
     .pipe(plugins.stylus({
       use: [poststylus(processors)],
-      'include css': true,
+      'include css': true
     }))
     .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
     .pipe(gulp.dest('build/css/'))

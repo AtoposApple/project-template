@@ -1,15 +1,16 @@
 import path from 'path'
 import webpack from 'webpack'
 
-const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
+const isDevelopment =
+  !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
 
 const config = {
   entry: './src/js/main.js',
   output: {
     path: path.resolve(__dirname, './build/js'),
-    filename: 'bundle.js',
+    filename: 'bundle.js'
   },
-  devtool: isDevelopment ? 'inline-source-map' : null,
+  devtool: isDevelopment ? 'inline-source-map' : false,
   watch: isDevelopment,
   cache: true,
   module: {
@@ -17,15 +18,15 @@ const config = {
       {
         test: /\.js$/,
         exclude: [/node_modules/],
-        use: [{
-          loader: 'babel-loader',
-        }],
-      },
-    ],
+        use: [
+          {
+            loader: 'babel-loader'
+          }
+        ]
+      }
+    ]
   },
-  plugins: [
-    new webpack.NoEmitOnErrorsPlugin(),
-  ],
+  plugins: [new webpack.NoEmitOnErrorsPlugin()]
 }
 
 export { config as default }

@@ -1,4 +1,4 @@
-# Frontend project template
+# Simple frontend project template
 * Gulp for tasks
 * Pug for html templates
 * Stylus as css preprocessor
@@ -12,4 +12,4 @@
 ## Features
 
 ### Components registrator
-Add Component styl or js file to main bundle file
+Add component styl or js file to main bundle file

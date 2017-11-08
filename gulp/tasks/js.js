@@ -3,11 +3,9 @@ import gulpLoadPlugins from 'gulp-load-plugins'
 import webpackStream from 'webpack-stream-fixed'
 import webpack from 'webpack'
 import notifier from 'node-notifier'
-import browserSync from 'browser-sync'
 import webpackConfig from '../../webpack.config'
 
 const plugins = gulpLoadPlugins()
-const sync = browserSync.create()
 
 gulp.task('js', (callback) => {
   let firstBuildReady = false
@@ -38,8 +36,6 @@ gulp.task('js', (callback) => {
     .pipe(webpackStream(webpackConfig, webpack, done))
     .pipe(gulp.dest('build/js'))
     .on('data', () => {
-      sync.reload()
-
       if (firstBuildReady && !callback.called) {
         callback.called = true
         callback()

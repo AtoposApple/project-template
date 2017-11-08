@@ -10,7 +10,7 @@ const config = {
     path: path.resolve(__dirname, './build/js'),
     filename: 'bundle.js'
   },
-  devtool: isDevelopment ? 'inline-source-map' : false,
+  // devtool: isDevelopment ? 'inline-source-map' : false,
   watch: isDevelopment,
   cache: true,
   module: {

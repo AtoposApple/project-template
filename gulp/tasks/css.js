@@ -4,11 +4,8 @@ import flexboxFixes from 'postcss-flexbugs-fixes'
 import autoprefixer from 'autoprefixer'
 import poststylus from 'poststylus'
 import mqpacker from 'css-mqpacker'
-import browserSync from 'browser-sync'
 
 const plugins = gulpLoadPlugins()
-const isDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development'
-const sync = browserSync.create()
 
 gulp.task('css', () => {
   const processors = [
@@ -23,12 +20,9 @@ gulp.task('css', () => {
         message: err.message
       }))
     }))
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
     .pipe(plugins.stylus({
       use: [poststylus(processors)],
       'include css': true
     }))
-    .pipe(plugins.if(isDevelopment, plugins.sourcemaps.init()))
     .pipe(gulp.dest('build/css/'))
-    .pipe(sync.stream())
 })

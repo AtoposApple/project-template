@@ -1,7 +1,7 @@
 import gulp from 'gulp'
 import browserSync from 'browser-sync'
 
-const sync = browserSync.create()
+const sync = browserSync.create('server')
 
 gulp.task('serve', () => {
   sync.init({

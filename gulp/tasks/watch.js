@@ -16,7 +16,6 @@ gulp.task('watch', () => {
   })
   plugins.watch(['{components,js}/**/*.js'], { cwd: 'src' }, (e) => {
     registrator(e)
-    sync.reload()
   })
   plugins.watch(['fonts/**/*'], { cwd: 'src' }, () => sequence('fonts', sync.reload))
   plugins.watch(['{img,svg}/**/*'], { cwd: 'src' }, () => sequence('img', sync.reload))

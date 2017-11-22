@@ -3,7 +3,8 @@
     "test": "standard --fix | snazzy",
     "dev": "cross-env NODE_ENV=development gulp",
     "prod": " npm run test && cross-env NODE_ENV=production gulp prod",
-    "precommit": "lint-staged && gulp js:min css:min"
+    "precommit": "lint-staged && gulp js:min css:min",
+    "clean": "rm -rf build"
   },
   "lint-staged": {
     "*.js": [
@@ -19,7 +20,6 @@
     "browser-sync": "^2.18.8",
     "cross-env": "^5.0.5",
     "css-mqpacker": "^5.0.1",
-    "del": "^2.2.2",
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-cached": "^1.1.1",
